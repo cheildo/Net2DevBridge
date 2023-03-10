@@ -52,6 +52,7 @@ const droptheme = createTheme({
 export default function Home() {
 
   const [id, getId] = useState(0);
+  const [userTokens, setUserTokens] = useState([]);
   const [customPay, useToken] = React.useState(true);
   const [nfts, setNfts] = useState([]);
   const [sourceNft, getSourceNft] = useState([]);
@@ -270,6 +271,8 @@ export default function Home() {
     const contract = new ethers.Contract(sNft, NftABI, wallet);
     const itemArray = [];
     await contract.walletOfOwner(account).then((value => {
+    console.log(`This wallet own the following NFT ${value}`);
+    setUserTokens(value);
     value.forEach(async(id) => {
         let token = parseInt(id, 16)
           const rawUri = contract.tokenURI(token)
@@ -328,7 +331,7 @@ async function initTransfer() {
     var explorer = "https://goerli.etherscan.io/tx/";
     var dNFT = goeNFT;
   }
-  const tokenId = id;
+  //const tokenId = id;
   const web3Modal = new Web3Modal();
   const connection = await web3Modal.connect();
   const provider = new ethers.providers.Web3Provider(connection);
@@ -345,6 +348,12 @@ async function initTransfer() {
   await new Promise((r) => setTimeout(r, 1000));
   let init = 'Initializing Transfer...'
   document.getElementById("displayconfirm1").innerHTML = init
+
+  userTokens.forEach(async(tokenId) => { 
+
+
+
+
   let confirmHolder = await sNFTCol.ownerOf(tokenId);
   let bridgeHolder = await dNFTCont.ownerOf(tokenId).catch(async (error)=> {
     console.log('Bridge NFT not present, Standby...');
@@ -464,6 +473,7 @@ async function initTransfer() {
   }
   getConfirmLink(confirmOut4);
   setSource();
+  });
 }
 
   return (
@@ -767,7 +777,7 @@ async function initTransfer() {
             }}
               id="displayconfirm2"
             ></Text>
-            <a href={confirmLink} target="_blank" placeholder="Transaction Info">
+            <a href={confirmLink} target="_blank"  rel="noreferrer" placeholder="Transaction Info">
               <div style={{color:"#ffffff", 
               fontSize:'18px',
               textDecoration:'underline',
