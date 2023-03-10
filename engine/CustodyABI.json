@@ -2,7 +2,7 @@
 	{
 		"inputs": [
 			{
-				"internalType": "contract ERC721Enumerable",
+				"internalType": "contract IERC1155",
 				"name": "_nft",
 				"type": "address"
 			},
@@ -20,9 +20,15 @@
 		"inputs": [
 			{
 				"indexed": true,
-				"internalType": "uint256",
+				"internalType": "uint256[]",
 				"name": "tokenId",
-				"type": "uint256"
+				"type": "uint256[]"
+			},
+			{
+				"indexed": true,
+				"internalType": "uint256[]",
+				"name": "amounts",
+				"type": "uint256[]"
 			},
 			{
 				"indexed": false,
@@ -82,9 +88,9 @@
 	{
 		"inputs": [
 			{
-				"internalType": "uint256",
-				"name": "tokenId",
-				"type": "uint256"
+				"internalType": "address",
+				"name": "user",
+				"type": "address"
 			}
 		],
 		"name": "emergencyDelete",
@@ -93,23 +99,12 @@
 		"type": "function"
 	},
 	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"name": "holdCustody",
+		"inputs": [],
+		"name": "nft",
 		"outputs": [
 			{
-				"internalType": "uint256",
-				"name": "tokenId",
-				"type": "uint256"
-			},
-			{
-				"internalType": "address",
-				"name": "holder",
+				"internalType": "contract IERC1155",
+				"name": "",
 				"type": "address"
 			}
 		],
@@ -120,7 +115,46 @@
 		"inputs": [
 			{
 				"internalType": "address",
+				"name": "operator",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "from",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256[]",
+				"name": "ids",
+				"type": "uint256[]"
+			},
+			{
+				"internalType": "uint256[]",
+				"name": "values",
+				"type": "uint256[]"
+			},
+			{
+				"internalType": "bytes",
+				"name": "data",
+				"type": "bytes"
+			}
+		],
+		"name": "onERC1155BatchReceived",
+		"outputs": [
+			{
+				"internalType": "bytes4",
 				"name": "",
+				"type": "bytes4"
+			}
+		],
+		"stateMutability": "pure",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "operator",
 				"type": "address"
 			},
 			{
@@ -130,16 +164,21 @@
 			},
 			{
 				"internalType": "uint256",
-				"name": "",
+				"name": "id",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "value",
 				"type": "uint256"
 			},
 			{
 				"internalType": "bytes",
-				"name": "",
+				"name": "data",
 				"type": "bytes"
 			}
 		],
-		"name": "onERC721Received",
+		"name": "onERC1155Received",
 		"outputs": [
 			{
 				"internalType": "bytes4",
@@ -164,11 +203,29 @@
 		"type": "function"
 	},
 	{
+		"inputs": [],
+		"name": "paytoken",
+		"outputs": [
+			{
+				"internalType": "contract IERC20",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
 		"inputs": [
 			{
-				"internalType": "uint256",
-				"name": "tokenId",
-				"type": "uint256"
+				"internalType": "uint256[]",
+				"name": "tokenIds",
+				"type": "uint256[]"
+			},
+			{
+				"internalType": "uint256[]",
+				"name": "amounts",
+				"type": "uint256[]"
 			},
 			{
 				"internalType": "address",
@@ -191,22 +248,32 @@
 	{
 		"inputs": [
 			{
-				"internalType": "uint256",
-				"name": "tokenId",
-				"type": "uint256"
+				"internalType": "uint256[]",
+				"name": "tokenIds",
+				"type": "uint256[]"
+			},
+			{
+				"internalType": "uint256[]",
+				"name": "amounts",
+				"type": "uint256[]"
 			}
 		],
 		"name": "retainNFTC",
 		"outputs": [],
-		"stateMutability": "payable",
+		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
 		"inputs": [
 			{
-				"internalType": "uint256",
-				"name": "tokenId",
-				"type": "uint256"
+				"internalType": "uint256[]",
+				"name": "tokenIds",
+				"type": "uint256[]"
+			},
+			{
+				"internalType": "uint256[]",
+				"name": "amounts",
+				"type": "uint256[]"
 			}
 		],
 		"name": "retainNFTN",
@@ -217,14 +284,20 @@
 	{
 		"inputs": [
 			{
-				"internalType": "uint256",
-				"name": "tokenId",
-				"type": "uint256"
+				"internalType": "bytes4",
+				"name": "interfaceID",
+				"type": "bytes4"
 			}
 		],
-		"name": "retainNew",
-		"outputs": [],
-		"stateMutability": "nonpayable",
+		"name": "supportsInterface",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
 		"type": "function"
 	},
 	{
@@ -236,24 +309,6 @@
 			}
 		],
 		"name": "transferOwnership",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "tokenId",
-				"type": "uint256"
-			},
-			{
-				"internalType": "address",
-				"name": "newHolder",
-				"type": "address"
-			}
-		],
-		"name": "updateOwner",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"

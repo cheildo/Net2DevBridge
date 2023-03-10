@@ -52,7 +52,7 @@ const droptheme = createTheme({
 export default function Home() {
 
   const [id, getId] = useState(0);
-  const [userTokens, setUserTokens] = useState([]);
+  const [balance, setBalance] = useState([]);
   const [customPay, useToken] = React.useState(true);
   const [nfts, setNfts] = useState([]);
   const [sourceNft, getSourceNft] = useState([]);
@@ -65,7 +65,7 @@ export default function Home() {
     console.log("closed");
   };
   const [sourceCustody, getSourceCustody] = useState([]);
-  const [erc20Contract, getErc20] = useState([]);
+  const [erc20Address, getErc20] = useState([]);
   const [selected, setSelected] = React.useState(new Set(["Set Destination"]));
   const destChain = React.useMemo(() => Array.from(selected).join(", ").replaceAll("_", " "),[selected])
   
@@ -270,12 +270,23 @@ export default function Home() {
     const wallet = new ethers.Wallet(key, provider);
     const contract = new ethers.Contract(sNft, NftABI, wallet);
     const itemArray = [];
-    await contract.walletOfOwner(account).then((value => {
-    console.log(`This wallet own the following NFT ${value}`);
-    setUserTokens(value);
-    value.forEach(async(id) => {
+    await contract.walletOfOwner(account).then((theBalance => {
+    console.log(`This wallet own the following NFT ${theBalance}`);
+    setBalance(theBalance);
+    let ids= [];
+    let amounts= [];
+      for (let i = 0; i < theBalance.length; i++) {
+          if (theBalance[i]!=0) {
+              ids.push(i);
+              amounts.push(theBalance[i]);
+          }
+      }
+    ids.forEach(async(id) => {
+        console.log(`ids are ${id}`)
         let token = parseInt(id, 16)
-          const rawUri = contract.tokenURI(token)
+        console.log(`parsed id is ${token}`)
+          const rawUri = await contract.uri(token)
+          console.log(`rawUri: ${rawUri}`)
           const Uri = Promise.resolve(rawUri)
           const getUri = Uri.then(value => {
             let str = value
@@ -283,13 +294,17 @@ export default function Home() {
             let metadata = axios.get(cleanUri).catch(function (error) {
               console.log(error.toJSON());
             });
+            console.log(`metadata: ${metadata} `)
             return metadata;
           })
           getUri.then(value => {
             let rawImg = value.data.image
+            console.log(`rawImg: ${rawImg} `)
             var name = value.data.name
             var desc = value.data.description
+            console.log(`desc: ${desc} `)
             let image = rawImg.replace('ipfs://', 'https://ipfs.io/ipfs/')
+            console.log(`image: ${image} `)
               let meta = {
                 name: name,
                 img: image,
@@ -316,17 +331,17 @@ async function initTransfer() {
   var poly = "Polygon";
   var eth = "Ethereum";
   if (bsc == destChain) {
-    var dCustody = bsctCustody;
-    var dRpc = bsctrpc;
+    var dCustodyAddress = bsctCustody;
+    var dRpc = bsctrpc;setBalance
     var explorer = "https://testnet.bscscan.com/tx/";
     var dNFT = bsctNFT;
   } else if (poly == destChain) {
-    var dCustody = mumCustody;
+    var dCustodyAddress = mumCustody;
     var dRpc = mumrpc;
     var explorer = "https://mumbai.polygonscan.com/tx/";
     var dNFT = mumNFT; //polyNFT;
   } else if (eth == destChain) {
-    var dCustody = goeCustody;
+    var dCustodyAddress = goeCustody;
     var dRpc = goerpc;
     var explorer = "https://goerli.etherscan.io/tx/";
     var dNFT = goeNFT;
@@ -340,86 +355,37 @@ async function initTransfer() {
   const ethprovider = new ethers.providers.JsonRpcProvider(dRpc);
   const ethKey = simpleCrypto.decrypt(cipherEth);
   var wallet = new ethers.Wallet(ethKey, ethprovider);
-  const sNFTCol = new ethers.Contract(sourceNft, NftABI, signer);
-  const tokenContract = new ethers.Contract(erc20Contract, Erc20ABI, signer);
-  const ethNFTCustody = new ethers.Contract(dCustody, CustodyABI, wallet);
-  const dNFTCont = new ethers.Contract(dNFT, BridgeABI, wallet);
+  const sourceNFTcontract = new ethers.Contract(sourceNft, NftABI, signer);
+  const tokenContract = new ethers.Contract(erc20Address, Erc20ABI, signer);
+  //const DestinationCustody = new ethers.Contract(dCustodyAddress, CustodyABI, wallet);
+  const destinationNFTcontract = new ethers.Contract(dNFT, BridgeABI, wallet);
   handler();
   await new Promise((r) => setTimeout(r, 1000));
   let init = 'Initializing Transfer...'
   document.getElementById("displayconfirm1").innerHTML = init
 
-  userTokens.forEach(async(tokenId) => { 
-
-
-
-
-  let confirmHolder = await sNFTCol.ownerOf(tokenId);
-  let bridgeHolder = await dNFTCont.ownerOf(tokenId).catch(async (error)=> {
-    console.log('Bridge NFT not present, Standby...');
-    console.log('Bridge NFT Mint at Destination Processing');
-  });
-  await dNFTCont.ownerOf(tokenId).catch(async (error) => {
-    if (error) {
-        const rawTxn = await dNFTCont.populateTransaction.bridgeMint(
-          bridgeWallet,
-          tokenId);
-        let signedTxn = await wallet.sendTransaction(rawTxn);
-        await signedTxn.wait();
-        console.log("Bridge NFT Minted at Destination!")
-        const nftBridgeApprove = await dNFTCont.approve(dCustody, tokenId);
-        await nftBridgeApprove.wait();
-        console.log('Transferring NFT to Destination Bridge Custody');
-        let gas = { gasLimit: 3000000 };
-        const retaindNFT = await ethNFTCustody.retainNew(tokenId, gas);
-        await retaindNFT.wait();
-        console.log('NFT Successfully Transferred to Destination Custody!');
-        var hash = signedTxn.hash;
-        console.log("Confirmation TX: " + hash)
-        console.log('Verifications completed!, Starting Bridge Transfer...');
-    }
-  else if (bridgeHolder == bridgeWallet) {
-      console.log('Confirming Bridge NFT at Destination Custody...');
-      const nftBridgeApprove = await dNFTCont.approve(dCustody, tokenId);
-        const approveConfirm = await nftBridgeApprove.wait();
-        console.log(approveConfirm);
-        let gas = { gasLimit: 3000000 };
-        const retaindNFT = await ethNFTCustody.retainNew(tokenId, gas);
-        await retaindNFT.wait();
-        console.log('NFT Successfully Transferred to Destination Custody!');
-        console.log('Verifications completed!, Starting Bridge Transfer...');
-      }
-      else {
-        console.log("Error submitting transaction");
-      }
-    })
- if (confirmHolder == userWallet) {
-    let getHolder = await ethNFTCustody.holdCustody(tokenId);
-    let unListed = "0x0000000000000000000000000000000000000000";
-    if (confirmHolder == getHolder.holder) {
-      console.log("User Confirmed, No Updates Needed");
-    } else if (getHolder.holder == unListed) {
-      console.log("User Confirmed, No Updates Needed");
-    } else {
-      let updOwner = await ethNFTCustody.updateOwner(tokenId, userWallet);
-      let receipt = await updOwner.wait();
-      if (receipt) {
-        console.log("Holder Address Updated to: " + userWallet);
-      } else {
-        console.log("Error submitting transaction");
-      }
-    }
- }
+  let tokenId= [];
+  let amounts= [];
+  for (let i = 0; i < balance.length; i++) {
+    if (balance[i]!=0) {
+        tokenId.push(i);
+        amounts.push(balance[i]);
+    } 
+  }
+  console.log(`The ids are ${tokenId}`);
+  console.log(`The amounts are ${amounts}`);
+  console.log(`Bridge wallet is ${wallet.address}`)
+  console.log(`User wallet is ${userWallet}`)
   let status1 = "Verifying Details..."
   document.getElementById("displayconfirm1").innerHTML = status1
   await new Promise((r) => setTimeout(r, 4000));
   let status2 = "Verified, Bridge Initialized..."
   document.getElementById("displayconfirm1").innerHTML = status2
   await new Promise((r) => setTimeout(r, 4000));
-  let status3 = "Please Approve NFT Transfer to Bridge."
+  let status3 = "Approve the transaction"
   document.getElementById("displayconfirm1").innerHTML = status3
   const sNFTCustody = new ethers.Contract(sourceCustody, CustodyABI, signer);
-  const tx1 = await sNFTCol.setApprovalForAll(sourceCustody, true);
+  const tx1 = await sourceNFTcontract.setApprovalForAll(sourceCustody, true);
   await tx1.wait();
   console.log("Approval to Transfer NFT Received from User!");
   let status4 = "Approval Received! Processing..."
@@ -430,33 +396,36 @@ async function initTransfer() {
     const cost = await sNFTCustody.costCustom();
     let options = { gasLimit: 3000000 };
     document.getElementById("displayconfirm1").innerHTML = status5
-    const tx2 = await tokenContract.approve(sourceCustody, cost);
+    const tx2 = await tokenContract.approve(sourceCustody, ethers.utils.parseUnits("1000","ether"));
     await tx2.wait();
     console.log("Approval to Transfer TX Fee Payment Received!");
-    const tx3 = await sNFTCustody.retainNFTC(tokenId, options);
+    const tx3 = await sNFTCustody.retainNFTC(tokenId, amounts, options);
     await tx3.wait();
   }
   else {
     const costNative = await sNFTCustody.costNative();
     let options = { gasLimit: 3000000, value: costNative };
     document.getElementById("displayconfirm1").innerHTML = status5
-    const tx3 = await sNFTCustody.retainNFTN(tokenId, options);
+    const tx3 = await sNFTCustody.retainNFTN(tokenId, amounts, options);
     await tx3.wait();
   }
-  let status6 = "NFT has been transferred to Bridge!!" 
-  let status7 = "In Transit to destination..."
-  document.getElementById("displayconfirm1").innerHTML = status6
-  document.getElementById("displayconfirm4").innerHTML = status7
+  console.log("NFT transfered to bridge wallet on source network!");
+  
   await new Promise((r) => setTimeout(r, 4000));
-  console.log('Transferring to Destination Via: '+ dRpc);
   let gas = { gasLimit: 3000000 };
-  let rawTxn = await ethNFTCustody.populateTransaction.releaseNFT(
-    tokenId,
+  const rawTxn = await destinationNFTcontract.populateTransaction.safeBatchTransferFrom(
+    bridgeWallet,
     userWallet,
-    gas
-  );
+    tokenId, 
+    amounts,
+    0x00,
+    gas);
   let signedTxn = await wallet.sendTransaction(rawTxn);
   let receipt = await signedTxn.wait();
+  var hash = signedTxn.hash;
+  console.log("NFT transfered to user wallet on BSC network!");
+  console.log("Confirmation TX: " + hash)
+  
   if (receipt) {
     var confirmOut6 = ''
     var confirmOut1 = 'Transfer has been completed!'
@@ -473,7 +442,6 @@ async function initTransfer() {
   }
   getConfirmLink(confirmOut4);
   setSource();
-  });
 }
 
   return (

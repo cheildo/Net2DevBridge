@@ -32,9 +32,9 @@ Global Configurations
 /*
 Polygon Mumbai Testnet
 */
-export var mumErc20 = "0x9ab834C78a00109f9c2e2be7C94AB70ae7f940B9";
-export var mumCustody = "0xA77cDb8cD559EaD06d7Dd16988F3905296A9B9f6";
-export var mumNFT = "0xb1E17e62B0D3ad46d52A3ff6f53BbE2A7068795E";
+export var mumErc20 = "0x0401717a8BE9382666854C49363ab76E93EEC341";
+export var mumCustody = "0xd575147457F14f6c9f3A7c7324057197ecb24a46";
+export var mumNFT = "0xe9088D573C609015B161A3F9e863FABCcfb99b39";
 export var mumrpc = "https://matic-mumbai.chainstacklabs.com";
 
 /*
@@ -50,7 +50,7 @@ BSC Testnet
 */
 export var bsctErc20 = "0x9ab834C78a00109f9c2e2be7C94AB70ae7f940B9";
 export var bsctCustody = "0xA77cDb8cD559EaD06d7Dd16988F3905296A9B9f6";
-export var bsctNFT = "0xb1E17e62B0D3ad46d52A3ff6f53BbE2A7068795E";
+export var bsctNFT = "0x89e071ab03789A5155Ad9a5Cd6403266D6A6D8Ac";
 export var bsctrpc = "https://data-seed-prebsc-1-s1.binance.org:8545/";
 
 /*
