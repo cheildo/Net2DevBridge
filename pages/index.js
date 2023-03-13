@@ -284,7 +284,6 @@ export default function Home() {
     ids.forEach(async(id) => {
         console.log(`ids are ${id}`)
         let token = parseInt(id, 16)
-        console.log(`parsed id is ${token}`)
           const rawUri = await contract.uri(token)
           console.log(`rawUri: ${rawUri}`)
           const Uri = Promise.resolve(rawUri)
@@ -374,74 +373,112 @@ async function initTransfer() {
   }
   console.log(`The ids are ${tokenId}`);
   console.log(`The amounts are ${amounts}`);
-  console.log(`Bridge wallet is ${wallet.address}`)
-  console.log(`User wallet is ${userWallet}`)
   let status1 = "Verifying Details..."
   document.getElementById("displayconfirm1").innerHTML = status1
   await new Promise((r) => setTimeout(r, 4000));
   let status2 = "Verified, Bridge Initialized..."
   document.getElementById("displayconfirm1").innerHTML = status2
   await new Promise((r) => setTimeout(r, 4000));
-  let status3 = "Approve the transaction"
+  let status3 = "Approve the setApprovalForAll transaction"
   document.getElementById("displayconfirm1").innerHTML = status3
   const sNFTCustody = new ethers.Contract(sourceCustody, CustodyABI, signer);
-  const tx1 = await sourceNFTcontract.setApprovalForAll(sourceCustody, true);
+  const tx1 = await sourceNFTcontract.setApprovalForAll(sourceCustody, true)
+  .catch(error => {
+    let statusErr = "Error! You didnt confirm the transaction! Start over again"
+    document.getElementById("displayconfirm1").innerHTML = statusErr
+    console.log(error);
+  });
   await tx1.wait();
-  console.log("Approval to Transfer NFT Received from User!");
+  console.log("SetApproval for all confirmed");
   let status4 = "Approval Received! Processing..."
   document.getElementById("displayconfirm1").innerHTML = status4
   await new Promise((r) => setTimeout(r, 4000));
-  let status5 = "Please Execute NFT Transfer to Bridge."
-  if (customPay == true) {
-    const cost = await sNFTCustody.costCustom();
-    let options = { gasLimit: 3000000 };
-    document.getElementById("displayconfirm1").innerHTML = status5
-    const tx2 = await tokenContract.approve(sourceCustody, ethers.utils.parseUnits("1000","ether"));
-    await tx2.wait();
-    console.log("Approval to Transfer TX Fee Payment Received!");
-    const tx3 = await sNFTCustody.retainNFTC(tokenId, amounts, options);
-    await tx3.wait();
-  }
-  else {
-    const costNative = await sNFTCustody.costNative();
-    let options = { gasLimit: 3000000, value: costNative };
-    document.getElementById("displayconfirm1").innerHTML = status5
-    const tx3 = await sNFTCustody.retainNFTN(tokenId, amounts, options);
-    await tx3.wait();
-  }
-  console.log("NFT transfered to bridge wallet on source network!");
-  
-  await new Promise((r) => setTimeout(r, 4000));
-  let gas = { gasLimit: 3000000 };
-  const rawTxn = await destinationNFTcontract.populateTransaction.safeBatchTransferFrom(
-    bridgeWallet,
-    userWallet,
-    tokenId, 
-    amounts,
-    0x00,
-    gas);
-  let signedTxn = await wallet.sendTransaction(rawTxn);
-  let receipt = await signedTxn.wait();
-  var hash = signedTxn.hash;
-  console.log("NFT transfered to user wallet on BSC network!");
-  console.log("Confirmation TX: " + hash)
-  
-  if (receipt) {
-    var confirmOut6 = ''
-    var confirmOut1 = 'Transfer has been completed!'
-    var confirmOut2 = 'Click for more info: '
-    var confirmOut4 =  explorer + signedTxn.hash
-    var confirmOut5 = 'Transaction Info'
+
+  let isApproved = await sourceNFTcontract.isApprovedForAll(userWallet, sourceCustody);
+  console.log(`isApproved: ${isApproved}`);
+
+  if (isApproved == true) {
+    let status5 = "Click approve to pay with BMF tokens"
+    if (customPay == true) {
+      const cost = await sNFTCustody.costCustom();
+      let options = { gasLimit: 3000000 };
+      document.getElementById("displayconfirm1").innerHTML = status5
+      const tx2 = await tokenContract.approve(sourceCustody, ethers.utils.parseUnits("1000","ether"))
+      .catch(error => {console.log(error.toJSON())});
+      await tx2.wait();
+      console.log("Approval to Transfer TX Fee Payment Received!");
+      let status = "Click to allow transfer of NFTs to bridge wallet"
+      document.getElementById("displayconfirm1").innerHTML = status
+      const tx3 = await sNFTCustody.retainNFTC(tokenId, amounts, options)
+      .catch(error => {
+        let statusErr = "Error! You didnt confirm the transaction! Start over again"
+        document.getElementById("displayconfirm1").innerHTML = statusErr
+        console.log(error);
+      });
+      await tx3.wait();
+    }
+    else {
+      const costNative = await sNFTCustody.costNative();
+      let options = { gasLimit: 3000000, value: costNative };
+      let status = "Click to allow transfer of NFTs to bridge wallet"
+      document.getElementById("displayconfirm1").innerHTML = status
+      const tx3 = await sNFTCustody.retainNFTN(tokenId, amounts, options)
+      .catch(error => {
+        let statusErr = "Error! You didnt confirm the transaction! Start over again"
+        document.getElementById("displayconfirm1").innerHTML = statusErr
+        console.log(error)
+      });
+      await tx3.wait();
+    }
+    console.log("NFT transfered to bridge wallet on source network!");
+    
     await new Promise((r) => setTimeout(r, 4000));
-    document.getElementById("displayconfirm1").innerHTML = confirmOut1
-    document.getElementById("displayconfirm2").innerHTML = confirmOut2
-    document.getElementById("displayconfirm3").innerHTML = confirmOut5
-    document.getElementById("displayconfirm4").innerHTML = confirmOut6
-  } else {
-    console.log("Error submitting transaction");
+
+    const afterBalance= await sourceNFTcontract.balanceOf(userWallet, tokenId[0]).then((result) => {
+    console.log(`User balance is ${result}`)
+    return result;
+    });
+    console.log(`User balance is ${afterBalance}`)
+
+    if(afterBalance == 0) {
+      let gas = { gasLimit: 3000000 };
+      const rawTxn = await destinationNFTcontract.populateTransaction.safeBatchTransferFrom(
+        bridgeWallet,
+        userWallet,
+        tokenId, 
+        amounts,
+        0x00,
+        gas);
+      let signedTxn = await wallet.sendTransaction(rawTxn);
+      let receipt = await signedTxn.wait();
+      var hash = signedTxn.hash;
+      console.log("NFT transfered to user wallet on BSC network!");
+      console.log("Confirmation TX: " + hash)
+      
+      if (receipt) {
+        var confirmOut6 = ''
+        var confirmOut1 = 'Transfer has been completed!'
+        var confirmOut2 = 'Click for more info: '
+        var confirmOut4 =  explorer + signedTxn.hash
+        var confirmOut5 = 'Transaction Info'
+        await new Promise((r) => setTimeout(r, 4000));
+        document.getElementById("displayconfirm1").innerHTML = confirmOut1
+        document.getElementById("displayconfirm2").innerHTML = confirmOut2
+        document.getElementById("displayconfirm3").innerHTML = confirmOut5
+        document.getElementById("displayconfirm4").innerHTML = confirmOut6
+      } 
+      else {
+        console.log("Error submitting transaction");
+      }
+      getConfirmLink(confirmOut4);
+      setSource();
+    }
+    else {
+      console.log("User did not confirm the transaction");
+      var statut = 'Error!!! You did not confirm the previus transaction. \nPlease start over again.';
+      document.getElementById("displayconfirm1").innerHTML = statut
+    }
   }
-  getConfirmLink(confirmOut4);
-  setSource();
 }
 
   return (
