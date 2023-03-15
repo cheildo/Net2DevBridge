@@ -398,44 +398,24 @@ async function initTransfer() {
   console.log(`isApproved: ${isApproved}`);
 
   if (isApproved == true) {
-    let status5 = "Click approve to pay with BMF tokens"
-    if (customPay == true) {
-      const cost = await sNFTCustody.costCustom();
-      let options = { gasLimit: 3000000 };
-      document.getElementById("displayconfirm1").innerHTML = status5
-      const tx2 = await tokenContract.approve(sourceCustody, ethers.utils.parseUnits("1000","ether"))
-      .catch(error => {console.log(error.toJSON())});
-      await tx2.wait();
-      console.log("Approval to Transfer TX Fee Payment Received!");
-      let status = "Click to allow transfer of NFTs to bridge wallet"
-      document.getElementById("displayconfirm1").innerHTML = status
-      const tx3 = await sNFTCustody.retainNFTC(tokenId, amounts, options)
-      .catch(error => {
-        let statusErr = "Error! You didnt confirm the transaction! Start over again"
-        document.getElementById("displayconfirm1").innerHTML = statusErr
-        console.log(error);
-      });
-      await tx3.wait();
-    }
-    else {
-      const costNative = await sNFTCustody.costNative();
-      let options = { gasLimit: 3000000, value: costNative };
-      let status = "Click to allow transfer of NFTs to bridge wallet"
-      document.getElementById("displayconfirm1").innerHTML = status
-      const tx3 = await sNFTCustody.retainNFTN(tokenId, amounts, options)
-      .catch(error => {
-        let statusErr = "Error! You didnt confirm the transaction! Start over again"
-        document.getElementById("displayconfirm1").innerHTML = statusErr
-        console.log(error)
-      });
-      await tx3.wait();
-    }
+    const costNative = await sNFTCustody.costNative();
+    let options = { gasLimit: 3000000, value: costNative };
+    let status = "Click confirm to allow transfer of NFTs to bridge wallet"
+    document.getElementById("displayconfirm1").innerHTML = status
+    const tx3 = await sNFTCustody.retainNFTN(tokenId, amounts, options)
+    .catch(error => {
+      let statusErr = "Error! You didnt confirm the transaction! Start over again"
+      document.getElementById("displayconfirm1").innerHTML = statusErr
+      console.log(error)
+    });
+    await tx3.wait();
+    
     console.log("NFT transfered to bridge wallet on source network!");
     
     await new Promise((r) => setTimeout(r, 4000));
 
     const afterBalance= await sourceNFTcontract.balanceOf(userWallet, tokenId[0]).then((result) => {
-    console.log(`User balance is ${result}`)
+    //console.log(`User balance is ${result}`)
     return result;
     });
     console.log(`User balance is ${afterBalance}`)
